@@ -1,0 +1,64 @@
+#!/bin/bash
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "${CURRENT_BRANCH}" != "main" ]]; then
+    echo "This script can only be ran on the 'main' branch."
+    exit 1
+fi
+
+# Get the latest tag
+LATEST=$(git describe --tags --abbrev=0)
+
+echo "Latest: ${LATEST}"
+
+# Split up the current format into an array using `.` as the delimiter
+IFS='.' read -r -a FORMAT <<< "${LATEST}"
+
+YEAR=${FORMAT[0]}
+MONTH=${FORMAT[1]}
+INDEX=${FORMAT[2]}
+
+# NOTE: For debugging
+# echo "Year: ${YEAR}, Month: ${MONTH}, Index: ${INDEX}"
+
+CURRENT_YEAR=$(date -u +'%Y')
+CURRENT_MONTH=$(date -u +'%m')
+
+NEXT="${CURRENT_YEAR}.${CURRENT_MONTH}"
+
+# If the current month is different from the latest one
+# that means we need to start a new tag with the current month
+if [[ "${MONTH}" != "${CURRENT_MONTH}" ]]; then
+    NEXT="${NEXT}.0"
+else
+    # if current month is the same as the latest,
+    # bump the index
+    NEW_INDEX=$((${INDEX}+1))
+    NEXT="${NEXT}.${NEW_INDEX}"
+fi
+
+echo "Next: ${NEXT}"
+echo
+
+read -p "The next deployment will be tagged as ${NEXT}. Do you want to proceed? (Y/n) " DEPLOY
+
+# Set it to "Y" if no input
+if [[ -z "${DEPLOY}" ]]; then
+    DEPLOY="Y"
+fi
+
+# Exit if the input is not 'Y' or 'n'
+if [[ "${DEPLOY}" != "Y" && "${DEPLOY}" != "n" ]]; then
+    echo "Input not expected: ${DEPLOY}"
+    exit 1
+fi
+
+# Just quit if answer is no
+if [[ "${DEPLOY}" == "n" ]]; then
+    exit 0
+fi
+
+# Tag the repository with the new deployment tag.
+# GitHub actions will then deploy the tag.
+git tag ${NEXT} && git push origin ${NEXT}

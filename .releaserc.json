@@ -1,0 +1,19 @@
+{
+    "branches": ["main", "master"],
+    "plugins": [
+      ["@semantic-release/commit-analyzer", {
+        "preset": "angular",
+        "releaseRules": [
+          {"type": "ci", "release": false},
+          {"type": "CI", "release": false},
+          {"scope": "no-release", "release": false},
+          {"message": "*", "release": "minor"}
+        ]
+      }],
+      ["@semantic-release/github", {
+        "successComment": ":tada: This is included in version ${nextRelease.version} :tada:",
+        "labels": false
+      }]
+    ]
+  }
+  
